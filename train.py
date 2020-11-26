@@ -10,6 +10,7 @@ import torchvision
 from model import GDRAM
 from utils import draw_locations
 from dataloader import MnistClutteredDataset
+from datalmdb import DataLmdb
 
 def str2bool(v):
     if isinstance(v, bool):
@@ -25,7 +26,7 @@ parser = argparse.ArgumentParser(description='Gaussian-RAM')
 parser.add_argument('--data_path', type=str, default='data')
 parser.add_argument('--device', type=str, default='cuda', help='cuda or cpu')
 parser.add_argument('--batch_size', type=int, default = 128)
-parser.add_argument('--dataset', type=str, default='mnist')
+parser.add_argument('--dataset', type=str, default='mfn')
 parser.add_argument('--lr', type=float, default='1e-3')
 parser.add_argument('--random_seed', type=int, default=1)
 parser.add_argument('--epochs', type=int, default=200)
@@ -35,7 +36,7 @@ parser.add_argument('--checkpoint', type=str, default=None)
 
 args = parser.parse_args()
 
-assert (args.dataset=='mnist' or args.dataset=='cifar10') or args.dataset=='cifar100', 'please use dataset in mnist, cifar10 or cifar100'
+#assert (args.dataset=='mnist' or args.dataset=='cifar10') or args.dataset=='cifar100', 'please use dataset in mnist, cifar10 or cifar100'
 torch.manual_seed(args.random_seed)
 
 kwargs = {'num_workers': 32, 'pin_memory': True} if not args.device=='cpu' else {}
@@ -114,6 +115,13 @@ elif args.dataset == 'mnist':
     test_loader = torch.utils.data.DataLoader(
         test_set, batch_size=args.batch_size, shuffle=False, **kwargs
     )
+elif args.dataset == 'mfn':
+    train_loader = torch.utils.data.DataLoader(DataLmdb("/kaggle/working/Fake/train", db_size=87690, crop_size=128, flip=True, scale=0.00390625),
+        batch_size=args.batch_size, shuffle=True)
+    valid_loader = torch.utils.data.DataLoader(DataLmdb("/kaggle/working/Fake/valid", db_size=28332, crop_size=128, flip=False, scale=0.00390625, random=False),
+        batch_size=args.batch_size, shuffle=False)
+    train_size = 87690
+    valid_size = 28332
 
 
 model = GDRAM(device=device, dataset=args.dataset, Fast = False).to(device)
@@ -204,13 +212,13 @@ for epoch in range(1, args.epochs + 1):
     accuracy = test(epoch, valid_loader, valid_size)
     scheduler.step(accuracy)
     print('====> Validation set accuracy: {:.2%}'.format(accuracy))
+    '''
     if accuracy > best_valid_accuracy:
         best_valid_accuracy = accuracy
         test_accuracy = test(epoch, test_loader, len(test_loader.dataset))
 
         #torch.save(model.state_dict(), 'checkpoints/' + args.dataset + '_rnn_adaptive_12_test.pth')
-
-        print('====> Test set accuracy: {:.2%}'.format(test_accuracy))
+        print('====> Test set accuracy: {:.2%}'.format(test_accuracy))'''
     train(epoch)
 
 print('====> Test set accuracy: {:.2%}'.format(test_accuracy))

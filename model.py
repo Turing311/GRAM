@@ -18,6 +18,8 @@ class GDRAM(nn.Module):
 
         if dataset == 'cifar100':
             self.class_num = 100
+        elif dataset == 'mfn':
+            self.class_num = 2
 
 
         self.normalized_glimpse_size = self.glimpse_size/(self.img_size/2)
